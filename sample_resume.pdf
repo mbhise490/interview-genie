@@ -1,0 +1,76 @@
+%PDF-1.4
+1 0 obj
+<<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+  /Type /Pages
+  /Kids [3 0 R]
+  /Count 1
+>>
+endobj
+3 0 obj
+<<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 612 792]
+  /Contents 4 0 R
+  /Resources <<
+    /Font <<
+      /F1 <<
+        /Type /Font
+        /Subtype /Type1
+        /BaseFont /Helvetica
+      >>
+    >>
+  >>
+>>
+endobj
+4 0 obj
+<<
+  /Length 550
+>>
+stream
+BT
+/F1 12 Tf
+72 720 Td
+(Alex Morgan) Tj
+0 -20 Td
+(Email: alex.morgan@example.com | Phone: 555-0199) Tj
+0 -30 Td
+(Candidate Info: Experienced Software Engineer specializing in Python and backend systems.) Tj
+0 -25 Td
+(Skills: Python, FastAPI, Docker, PostgreSQL, Redis, Kubernetes) Tj
+0 -25 Td
+(Education: Bachelor of Science in Computer Science, State Tech University, 2021) Tj
+0 -25 Td
+(Projects: Cloud API Gateway - High throughput microservices routing system built with FastAPI.) Tj
+0 -25 Td
+(Experience: Senior Backend Developer at Acme Corp (2021-Present). Led API design and database optimizations.) Tj
+0 -25 Td
+(Certifications: AWS Certified Developer Associate) Tj
+0 -25 Td
+(Achievements: Open Source Contributor of the Year 2023 at Acme Hackathon) Tj
+0 -25 Td
+(Other Info: Passionate about clean architecture, testing, and mentoring junior engineers.) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000305 00000 n 
+trailer
+<<
+  /Size 5
+  /Root 1 0 R
+>>
+startxref
+908
+%%EOF

@@ -1,0 +1,31 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+.env
+.venv/
+venv/
+ENV/
+
+# Streamlit secrets (Do not commit secrets.toml!)
+.streamlit/secrets.toml
+
+# SQLite local databases
+*.db
+*.sqlite3
+
+# Uploaded candidate files
+uploads/resumes/*
+!uploads/resumes/.gitkeep
+
+# IDE & Editor folders
+.vscode/
+.idea/
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db

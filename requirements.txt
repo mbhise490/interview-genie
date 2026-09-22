@@ -1,0 +1,15 @@
+streamlit>=1.40.0
+fastapi>=0.115.0
+uvicorn>=0.30.0
+langgraph>=0.2.0
+langgraph-checkpoint-sqlite>=2.0.0
+openai>=1.50.0
+pydantic>=2.8.0
+pdfplumber>=0.11.0
+pypdf>=4.0.0
+python-dotenv>=1.0.0
+bcrypt>=4.0.0
+pyjwt>=2.9.0
+pyodbc>=5.0.0; sys_platform == 'win32'
+requests>=2.31.0
+sqlalchemy>=2.0.0

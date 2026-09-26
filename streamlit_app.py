@@ -19,5 +19,9 @@ try:
 except Exception:
     pass
 
-# Run the main Streamlit application
-import ui.app
+# Run the main Streamlit application dynamically on every script execution
+app_path = os.path.join(root_dir, "ui", "app.py")
+with open(app_path, "r", encoding="utf-8") as f:
+    code = compile(f.read(), app_path, "exec")
+exec(code, globals())
+

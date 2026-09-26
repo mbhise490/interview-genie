@@ -2,7 +2,11 @@ import os
 import re
 import json
 from typing import Optional, Tuple, List
-import pyodbc
+try:
+    import pyodbc
+except (ImportError, ModuleNotFoundError):
+    pyodbc = None
+
 from dotenv import load_dotenv, find_dotenv
 
 from interview_genie.Models.schema import ResumeInfo, InterviewPrep, InterviewState, InterviewFeedback
@@ -18,6 +22,10 @@ def is_sql_server_available() -> bool:
     global _sql_server_available_cache
     if _sql_server_available_cache is not None:
         return _sql_server_available_cache
+
+    if pyodbc is None:
+        _sql_server_available_cache = False
+        return False
 
     if os.getenv("USE_SQLITE", "false").lower() in ("true", "1", "yes"):
         print("[DB] USE_SQLITE is set. Using self-contained SQLite database.")
@@ -55,8 +63,10 @@ def get_connection_string() -> str:
     )
 
 
-def get_db_connection() -> pyodbc.Connection:
+def get_db_connection():
     """Returns an active pyodbc connection to the database."""
+    if pyodbc is None:
+        raise ConnectionError("pyodbc is not installed in this environment.")
     conn_str = get_connection_string()
     return pyodbc.connect(conn_str, timeout=5)
 

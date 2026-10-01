@@ -39,11 +39,11 @@ class LoginRequest(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
     candidate_id: str
     email: str
     full_name: str
+    phone: Optional[str] = None
+    message: str = "Authentication successful"
 
 
 class CandidateProfileResponse(BaseModel):

@@ -11,7 +11,7 @@ DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8001")
 
 class GenieAPIClient:
     """
-    Hybrid client for Interview Genie.
+    Hybrid client for Interview Genie using basic candidate authentication.
     - If FastAPI backend is active, routes requests via HTTP REST API.
     - If FastAPI backend is offline (e.g. Streamlit Community Cloud), executes directly in Python.
     """
@@ -35,10 +35,10 @@ class GenieAPIClient:
             return self._is_backend_online
         return self._check_backend_online()
 
-    def _get_headers(self, token: Optional[str] = None) -> Dict[str, str]:
+    def _get_headers(self, candidate_id: Optional[str] = None) -> Dict[str, str]:
         headers = {"Content-Type": "application/json"}
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
+        if candidate_id:
+            headers["X-Candidate-ID"] = str(candidate_id)
         return headers
 
     def validate_db(self) -> Dict[str, Any]:
@@ -62,7 +62,7 @@ class GenieAPIClient:
         full_name: Optional[str] = "Candidate",
         phone: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Registers a new candidate."""
+        """Registers a new candidate with basic authentication."""
         if not email or "@" not in email:
             raise ValueError("A valid email address is required.")
         if not password or len(password) < 4:
@@ -85,7 +85,7 @@ class GenieAPIClient:
                 self._is_backend_online = False
 
         # In-process fallback
-        from interview_genie.utils.auth import hash_password, create_access_token
+        from interview_genie.utils.auth import hash_password
         from interview_genie.database.db_conn import register_candidate_user
         pwd_hash = hash_password(password)
         candidate = register_candidate_user(
@@ -94,17 +94,15 @@ class GenieAPIClient:
             full_name=full_name or "Candidate",
             phone=phone,
         )
-        token = create_access_token({"sub": candidate["candidate_id"], "email": candidate["email"]})
         return {
-            "access_token": token,
-            "token_type": "bearer",
             "candidate_id": candidate["candidate_id"],
             "email": candidate["email"],
             "full_name": candidate["full_name"],
+            "phone": candidate.get("phone"),
         }
 
     def login(self, email: str, password: str) -> Dict[str, Any]:
-        """Logs in a candidate and returns access token."""
+        """Logs in a candidate with email and password."""
         if self.is_api_online():
             try:
                 payload = {
@@ -120,42 +118,39 @@ class GenieAPIClient:
                 self._is_backend_online = False
 
         # In-process fallback
-        from interview_genie.utils.auth import verify_password, create_access_token
+        from interview_genie.utils.auth import verify_password
         from interview_genie.database.db_conn import get_candidate_by_email
         candidate = get_candidate_by_email(email)
         if not candidate or not candidate.get("password_hash"):
             raise ValueError("Invalid email or password.")
         if not verify_password(password, candidate["password_hash"]):
             raise ValueError("Invalid email or password.")
-        token = create_access_token({"sub": candidate["candidate_id"], "email": candidate["email"]})
         return {
-            "access_token": token,
-            "token_type": "bearer",
             "candidate_id": candidate["candidate_id"],
             "email": candidate["email"],
             "full_name": candidate["full_name"],
+            "phone": candidate.get("phone"),
         }
 
-    def get_profile(self, token: str) -> Dict[str, Any]:
-        """Retrieves candidate profile and complete interview history."""
+    def get_profile(self, candidate_id: str) -> Dict[str, Any]:
+        """Retrieves candidate profile and complete interview history using candidate_id."""
+        if not candidate_id:
+            raise ValueError("Candidate ID is required.")
+
         if self.is_api_online():
             try:
-                headers = self._get_headers(token)
+                headers = self._get_headers(candidate_id)
                 res = requests.get(f"{self.base_url}/api/auth/me", headers=headers, timeout=15)
                 if res.status_code == 200:
                     return res.json()
-                err = res.json().get("detail", "Session expired or invalid token.")
+                err = res.json().get("detail", "Candidate account not found.")
                 raise ValueError(err)
             except requests.exceptions.RequestException:
                 self._is_backend_online = False
 
         # In-process fallback
-        from interview_genie.utils.auth import decode_access_token
         from interview_genie.database.db_conn import get_candidate_profile
-        payload = decode_access_token(token)
-        if not payload or not payload.get("sub"):
-            raise ValueError("Session expired or invalid token.")
-        profile = get_candidate_profile(payload["sub"])
+        profile = get_candidate_profile(candidate_id)
         if not profile:
             raise ValueError("Candidate profile not found.")
         return profile
@@ -165,12 +160,12 @@ class GenieAPIClient:
         resume_pdf_path: str,
         target_role: str,
         thread_id: str,
-        token: Optional[str] = None,
+        candidate_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Starts an interview session."""
         if self.is_api_online():
             try:
-                headers = self._get_headers(token)
+                headers = self._get_headers(candidate_id)
                 payload = {
                     "resume_pdf_path": resume_pdf_path,
                     "target_role": target_role,
@@ -187,13 +182,6 @@ class GenieAPIClient:
         # In-process fallback (LangGraph direct invocation)
         from interview_genie.api.deps import interview_app
         from interview_genie.api.routes import _extract_turn_response
-        from interview_genie.utils.auth import decode_access_token
-
-        cand_id = None
-        if token:
-            payload = decode_access_token(token)
-            if payload:
-                cand_id = payload.get("sub")
 
         config = {"configurable": {"thread_id": thread_id}}
         result = interview_app.invoke(
@@ -201,7 +189,7 @@ class GenieAPIClient:
                 "resume_pdf_path": resume_pdf_path,
                 "target_role": target_role,
                 "thread_id": thread_id,
-                "candidate_id": cand_id,
+                "candidate_id": candidate_id,
             },
             config=config,
         )
@@ -211,12 +199,12 @@ class GenieAPIClient:
         self,
         thread_id: str,
         answer: str,
-        token: Optional[str] = None,
+        candidate_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Submits candidate's answer and retrieves next turn."""
         if self.is_api_online():
             try:
-                headers = self._get_headers(token)
+                headers = self._get_headers(candidate_id)
                 payload = {"thread_id": thread_id, "answer": answer}
                 res = requests.post(f"{self.base_url}/api/interview/answer", headers=headers, json=payload, timeout=120)
                 if res.status_code == 200:
@@ -238,12 +226,12 @@ class GenieAPIClient:
     def end_interview(
         self,
         thread_id: str,
-        token: Optional[str] = None,
+        candidate_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Ends interview session, generates comprehensive evaluation, and stores to DB."""
         if self.is_api_online():
             try:
-                headers = self._get_headers(token)
+                headers = self._get_headers(candidate_id)
                 payload = {"thread_id": thread_id}
                 res = requests.post(f"{self.base_url}/api/interview/end", headers=headers, json=payload, timeout=180)
                 if res.status_code == 200:
@@ -262,7 +250,6 @@ class GenieAPIClient:
             save_completed_interview,
         )
         from interview_genie.agents.evaluator_agent import evaluate_interview
-        from interview_genie.utils.auth import decode_access_token
 
         config = {"configurable": {"thread_id": thread_id}}
         state = interview_app.get_state(config)
@@ -277,13 +264,7 @@ class GenieAPIClient:
         completed_state = interview_state.model_copy(deep=True)
         completed_state.status = "completed"
 
-        cand_id = None
-        if token:
-            payload = decode_access_token(token)
-            if payload:
-                cand_id = payload.get("sub")
-        if not cand_id:
-            cand_id = get_candidate_id_for_thread(thread_id)
+        cand_id = candidate_id or get_candidate_id_for_thread(thread_id)
 
         prior_feedback = None
         if cand_id:

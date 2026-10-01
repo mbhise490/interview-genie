@@ -59,8 +59,7 @@ def get_connection_string() -> str:
         f"SERVER={server};"
         f"DATABASE={database};"
         f"Trusted_Connection={trusted};"
-        f"TrustServerCertificate={trust_cert}"
-    )
+        f"TrustServerCertificate={trust_cert}")
 
 
 def get_db_connection():
@@ -128,10 +127,6 @@ def validate_db_connection() -> dict:
     except Exception as e:
         return sqlite_conn.validate_sqlite_db()
 
-
-# =========================================================================
-# Authentication & User Management
-# =========================================================================
 
 def register_candidate_user(
     email: str,

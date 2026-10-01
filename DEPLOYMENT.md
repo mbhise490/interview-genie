@@ -63,9 +63,6 @@ Before launching, add your OpenAI API key to Streamlit Cloud:
 # Required: Your OpenAI API Key
 OPENAI_API_KEY = "sk-proj-YOUR_ACTUAL_OPENAI_API_KEY_HERE"
 
-# Required: Secret key for signing candidate JWT tokens
-JWT_SECRET_KEY = "interview_genie_super_secret_jwt_key_2026_change_me"
-
 # Optional: Set to true if you want to explicitly enforce SQLite in cloud
 USE_SQLITE = "true"
 ```

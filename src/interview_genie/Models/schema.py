@@ -25,22 +25,18 @@ class SkillTopics(BaseModel):
 
 
 class InterviewPrep(BaseModel):
-    skill_topics: List[SkillTopics] = Field(default_factory=list, description="List of skill-wise topics, each divided by difficulty level.")
-    project_questions: List[str] = Field(default_factory=list, description="Interview questions specifically based on the candidate's projects listed in the resume.")
-    role_specific_questions: List[str] = Field(default_factory=list, description="Scenario-based or role-specific interview questions tailored to the target role, derived from the candidate's resume and the target role requirements.")
+    skill_topics: List[SkillTopics] = Field(default_factory=list, description="List of skill-wise topics, each divided by difficulty level, that the interview agent asks to the candidate.")
 
 
 class InterviewPrepSchema(BaseModel):
-    skill_topics: List[SkillTopics] = Field(default_factory=list, description="List of skill-wise topics, each divided by difficulty level.")
-    project_questions: List[str] = Field(default_factory=list, description="Interview questions specifically based on the candidate's projects listed in the resume.")
-    role_specific_questions: List[str] = Field(default_factory=list, description="Scenario-based or role-specific interview questions tailored to the target role, derived from the candidate's resume and the target role requirements.")
+    skill_topics: List[SkillTopics] = Field(default_factory=list, description="List of skill-wise topics, each divided by difficulty level, that the interview agent asks to the candidate.")
 
 
 class StaticInterviewContext(BaseModel):
     """Everything that stays fixed for the whole interview session — built once, reused every turn."""
     target_role: str = Field(..., description="The job role the candidate is being interviewed for.")
     resume_info: ResumeInfo = Field(..., description="Structured resume information for the candidate.")
-    interview_prep: InterviewPrep = Field(..., description="Skill-wise topics and project-based questions to draw questions from.")
+    interview_prep: InterviewPrep = Field(..., description="Skill-wise topics for the interview agent to ask the candidate.")
 
 
 class ConversationTurn(BaseModel):
@@ -57,7 +53,7 @@ class InterviewState(BaseModel):
 
 
 class NextQuestion(BaseModel):
-    question: str = Field(..., description="The next thing the interviewer says to the candidate — may include a brief natural reaction to their last answer before the new question.")
+    question: str = Field(..., description="The next thing the interviewer says to the candidate — may include a  natural reaction to their last answer before the new question.")
     score: Optional[float] = Field(None, description="Score (0-10) for the candidate's previous answer, if one was provided.")
 
 class StrengthArea(BaseModel):

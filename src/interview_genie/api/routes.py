@@ -13,7 +13,7 @@ from interview_genie.api.schemas import (
     AuthResponse,
     CandidateProfileResponse,
 )
-from interview_genie.utils.auth import hash_password, verify_password, create_access_token
+from interview_genie.utils.auth import hash_password, verify_password
 from interview_genie.database.db_conn import (
     validate_db_connection,
     save_completed_interview,
@@ -91,13 +91,11 @@ def register(req: RegisterRequest):
             full_name=req.full_name or "Candidate",
             phone=req.phone,
         )
-        token = create_access_token({"sub": candidate["candidate_id"], "email": candidate["email"]})
         return AuthResponse(
-            access_token=token,
-            token_type="bearer",
             candidate_id=candidate["candidate_id"],
             email=candidate["email"],
             full_name=candidate["full_name"],
+            phone=candidate.get("phone"),
         )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
@@ -107,7 +105,7 @@ def register(req: RegisterRequest):
 
 @router.post("/auth/login", response_model=AuthResponse)
 def login(req: LoginRequest):
-    """Authenticates candidate with email and password, returning a JWT token."""
+    """Authenticates candidate with email and password."""
     candidate = get_candidate_by_email(req.email)
     if not candidate or not candidate.get("password_hash"):
         raise HTTPException(
@@ -121,13 +119,11 @@ def login(req: LoginRequest):
             detail="Invalid email or password.",
         )
 
-    token = create_access_token({"sub": candidate["candidate_id"], "email": candidate["email"]})
     return AuthResponse(
-        access_token=token,
-        token_type="bearer",
         candidate_id=candidate["candidate_id"],
         email=candidate["email"],
         full_name=candidate["full_name"],
+        phone=candidate.get("phone"),
     )
 
 

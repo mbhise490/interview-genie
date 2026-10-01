@@ -37,7 +37,7 @@ def parse_resume_node(state: InterviewGraphState) -> dict:
     return {"static_context": StaticInterviewContext(
         target_role=state.target_role or "Software Engineer",
         resume_info=resume_info,
-        interview_prep=InterviewPrep(skill_topics=[], project_questions=[], role_specific_questions=[]),
+        interview_prep=InterviewPrep(skill_topics=[]),
     )}
 
 
@@ -62,8 +62,6 @@ def generate_prep_node(state: InterviewGraphState, config: RunnableConfig = None
 
     interview_prep = InterviewPrep(
         skill_topics=prep_data.get("skill_topics", []),
-        project_questions=prep_data.get("project_questions", []),
-        role_specific_questions=prep_data.get("role_specific_questions", []),
     )
     updated_context = state.static_context.model_copy(update={"interview_prep": interview_prep})
 

@@ -24,8 +24,6 @@ api_client = GenieAPIClient()
 # =============================================================================
 # Session State Initialization
 # =============================================================================
-if "token" not in st.session_state:
-    st.session_state["token"] = None
 if "user" not in st.session_state:
     st.session_state["user"] = None
 if "thread_id" not in st.session_state:
@@ -71,7 +69,7 @@ with st.sidebar:
     st.markdown("---")
 
     # 2. Candidate Authentication
-    if st.session_state["token"] and st.session_state["user"]:
+    if st.session_state.get("user"):
         user = st.session_state["user"]
         st.markdown(
             f"""
@@ -84,7 +82,6 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
         if st.button("Sign Out", use_container_width=True):
-            st.session_state["token"] = None
             st.session_state["user"] = None
             st.rerun()
     else:
@@ -103,9 +100,7 @@ with st.sidebar:
                     else:
                         try:
                             auth_res = api_client.login(login_email, login_password)
-                            st.session_state["token"] = auth_res["access_token"]
-                            profile = api_client.get_profile(auth_res["access_token"])
-                            st.session_state["user"] = profile
+                            st.session_state["user"] = auth_res
                             st.success("Signed in successfully!")
                             st.rerun()
                         except Exception as e:
@@ -130,9 +125,7 @@ with st.sidebar:
                                 full_name=reg_name,
                                 phone=reg_phone,
                             )
-                            st.session_state["token"] = auth_res["access_token"]
-                            profile = api_client.get_profile(auth_res["access_token"])
-                            st.session_state["user"] = profile
+                            st.session_state["user"] = auth_res
                             st.success("Account created successfully!")
                             st.rerun()
                         except Exception as e:
@@ -230,13 +223,13 @@ if nav_mode == "🎙️ Practice Interview":
             if st.button("🚀 Start Interview", type="primary", use_container_width=True, disabled=not can_start):
                 with st.spinner("Analyzing resume and generating customized interview preparation..."):
                     new_thread_id = generate_thread_id(prefix="session")
-                    token = st.session_state.get("token")
+                    cid = st.session_state["user"].get("candidate_id") if st.session_state.get("user") else None
                     try:
                         res = api_client.start_interview(
                             resume_pdf_path=resolved_resume_path,
                             target_role=final_role,
                             thread_id=new_thread_id,
-                            token=token,
+                            candidate_id=cid,
                         )
                         st.session_state["thread_id"] = new_thread_id
                         st.session_state["target_role"] = final_role
@@ -302,10 +295,11 @@ if nav_mode == "🎙️ Practice Interview":
         if submit_ans and answer_input.strip():
             with st.spinner("Evaluating response and preparing next question..."):
                 try:
+                    cid = st.session_state["user"].get("candidate_id") if st.session_state.get("user") else None
                     res = api_client.submit_answer(
                         thread_id=st.session_state["thread_id"],
                         answer=answer_input.strip(),
-                        token=st.session_state.get("token"),
+                        candidate_id=cid,
                     )
 
                     # Update conversation transcript
@@ -342,9 +336,10 @@ if nav_mode == "🎙️ Practice Interview":
         if conclude_early:
             with st.spinner("Concluding interview and generating comprehensive evaluation..."):
                 try:
+                    cid = st.session_state["user"].get("candidate_id") if st.session_state.get("user") else None
                     end_res = api_client.end_interview(
                         thread_id=st.session_state["thread_id"],
-                        token=st.session_state.get("token"),
+                        candidate_id=cid,
                     )
                     st.session_state["interview_status"] = "completed"
                     st.session_state["feedback"] = end_res.get("feedback")
@@ -463,12 +458,12 @@ elif nav_mode == "📊 My History & Growth":
     st.markdown('<div class="genie-title">Candidate History & Growth Tracking</div>', unsafe_allow_html=True)
     st.caption("Review your completed interviews, role progression, and evaluator feedback stored in SQL Server.")
 
-    token = st.session_state.get("token")
-    if not token:
+    user = st.session_state.get("user")
+    if not user or not user.get("candidate_id"):
         st.warning("Please sign in or register in the sidebar to view your interview history.")
     else:
         try:
-            profile = api_client.get_profile(token)
+            profile = api_client.get_profile(user["candidate_id"])
             st.session_state["user"] = profile
             interviews = profile.get("interviews", [])
 
@@ -558,7 +553,7 @@ elif nav_mode == "⚙️ System & DB Health":
     with dcol2:
         st.markdown("### 🔌 API Configuration")
         st.write(f"- **FastAPI Base URL**: `{api_client.base_url}`")
-        st.write("- **Auth Method**: JWT Bearer Tokens (HS256)")
+        st.write("- **Auth Method**: Basic Candidate Session Auth (bcrypt)")
         st.write("- **Evaluator LLM**: `gpt-5.6-luna`")
         st.write("- **Resume Parser LLM**: `gpt-4o-mini`")
         st.write("- **Historical Progress Mode**: Role-specific multi-interview comparative analysis")

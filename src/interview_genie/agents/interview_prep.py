@@ -9,7 +9,7 @@ load_dotenv(find_dotenv(usecwd=True))
 
 
 def generate_interview_prep(resume_info: dict, target_role: str) -> str:
-    """Generate skill-wise (basic/intermediate/advanced) interview topics and project-based questions using the Responses API."""
+    """Generate skill-wise (basic/intermediate/advanced) interview topics that the interview agent will ask the candidate."""
     try:
         api_key = os.environ.get("OPENAI_API_KEY")
         client = OpenAI(api_key=api_key)
@@ -21,16 +21,17 @@ Candidate Resume Info:
 {resume_info}
 
 Based on the candidate's skills, projects, and experience above, and the target role:
-1. For each relevant skill found in the resume, list important interview topics, each tagged as basic, intermediate, or advanced.
-2. Generate interview questions specifically based on the candidate's projects.
-3. Create scenario-based or role-specific interview questions tailored to the target role, derived from the candidate's resume and the target role requirements.
-Only include skills actually present in the resume, prioritized by relevance to the target role.
+Identify the relevant technical skills and domains from the resume. For each skill, list the important interview topics and subtopics, categorized by difficulty level (basic, intermediate, advanced), that the interview agent should ask to the candidate during the interview.
+
+Important instructions:
+- Do NOT generate full interview questions. ONLY return the topics and subtopics for the interview agent to ask.
+- Only include skills and topics actually relevant to the candidate's background and prioritized for the target role.
 """
 
         response = client.responses.parse(
             model="gpt-5.6-luna",
             input=[
-                {"role": "system", "content": "You are an expert technical interviewer and career coach."},
+                {"role": "system", "content": "You are an expert technical interviewer and career coach. You identify key topics for the interviewer agent to explore."},
                 {"role": "user", "content": prompt},
             ],
             text_format=InterviewPrepSchema,

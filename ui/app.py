@@ -162,48 +162,67 @@ if not st.session_state.get("user"):
 # =============================================================================
 user = st.session_state.get("user")
 if user:
+    is_live = (st.session_state.get("interview_status") == "in_progress")
+
     with st.sidebar:
         st.markdown('<div class="genie-title">🧞 Interview Genie</div>', unsafe_allow_html=True)
         st.markdown('<div class="genie-subtitle">Adaptive Mock Interview Platform</div>', unsafe_allow_html=True)
 
-        st.markdown(
-            f"""
-            <div class="user-badge-container">
-                <div class="user-badge-name">👤 {user.get('full_name', 'Candidate')}</div>
-                <div class="user-badge-email">{user.get('email', '')}</div>
-                <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Candidate ID: {user.get('candidate_id', '')[:8]}...</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.button("Sign Out", use_container_width=True):
-            reset_interview()
-            st.session_state["user"] = None
-            st.rerun()
-
-        st.markdown("---")
-
-        # Navigation Mode
-        nav_mode = st.radio(
-            "Navigation",
-            options=["🎙️ Practice Interview", "📊 My History & Growth", "⚙️ System & DB Health"],
-            index=0,
-        )
-
-        st.markdown("---")
-
-        # Database & Backend Health
-        health = api_client.validate_db()
-        if health.get("status") == "connected":
-            st.success(f"🟢 Database: {health.get('database')} Connected", icon="✅")
-            with st.expander("Database Status"):
-                st.caption(f"Server: {health.get('server_version', 'SQL Server')[:45]}...")
-                tbls = health.get("tables", {})
-                st.write(f"- **Candidates**: {tbls.get('candidates', 0)}")
-                st.write(f"- **Resumes**: {tbls.get('resume_info', 0)}")
-                st.write(f"- **Interviews**: {tbls.get('interview', 0)}")
+        if is_live:
+            st.markdown(
+                f"""
+                <div class="user-badge-container" style="border-left: 4px solid #22c55e;">
+                    <div style="font-size: 0.72rem; color: #16a34a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">● Live Interview Active</div>
+                    <div class="user-badge-name" style="margin-top: 4px;">👤 {user.get('full_name', 'Candidate')}</div>
+                    <div class="user-badge-email" style="font-weight: 500;">{st.session_state.get('target_role', 'Engineering Candidate')}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.caption("🔒 **Focus Mode Active**\nKeep all your attention on the technical discussion. Conclude from the room when ready to view evaluation.")
+            if st.button("Cancel & Exit Session", use_container_width=True):
+                reset_interview()
+                st.rerun()
+            nav_mode = "🎙️ Practice Interview"
         else:
-            st.error(f"🔴 DB Offline: {health.get('error', 'Unable to reach backend')}", icon="⚠️")
+            st.markdown(
+                f"""
+                <div class="user-badge-container">
+                    <div class="user-badge-name">👤 {user.get('full_name', 'Candidate')}</div>
+                    <div class="user-badge-email">{user.get('email', '')}</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Candidate ID: {user.get('candidate_id', '')[:8]}...</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if st.button("Sign Out", use_container_width=True):
+                reset_interview()
+                st.session_state["user"] = None
+                st.rerun()
+
+            st.markdown("---")
+
+            # Navigation Mode
+            nav_mode = st.radio(
+                "Navigation",
+                options=["🎙️ Practice Interview", "📊 My History & Growth", "⚙️ System & DB Health"],
+                index=0,
+            )
+
+            st.markdown("---")
+
+            # Database & Backend Health
+            health = api_client.validate_db()
+            if health.get("status") == "connected":
+                st.success(f"🟢 Database: {health.get('database')} Connected", icon="✅")
+                with st.expander("Database Status"):
+                    st.caption(f"Server: {health.get('server_version', 'SQL Server')[:45]}...")
+                    tbls = health.get("tables", {})
+                    st.write(f"- **Candidates**: {tbls.get('candidates', 0)}")
+                    st.write(f"- **Resumes**: {tbls.get('resume_info', 0)}")
+                    st.write(f"- **Interviews**: {tbls.get('interview', 0)}")
+            else:
+                st.error(f"🔴 DB Offline: {health.get('error', 'Unable to reach backend')}", icon="⚠️")
 
 
 # =============================================================================
@@ -304,25 +323,29 @@ if user and nav_mode == "🎙️ Practice Interview":
     # STAGE B: In-Progress Live Interview Room
     # ---------------------------------------------------------
     elif st.session_state["interview_status"] == "in_progress":
-        # Header Status Bar with Conclude button
-        hcol1, hcol2, hcol3, hcol4 = st.columns([2, 1, 1, 1])
-        with hcol1:
-            st.markdown(f"### 🎯 Role: **{st.session_state['target_role']}**")
-            st.caption(f"Session Thread: `{st.session_state['thread_id']}`")
-        with hcol2:
-            q_cnt = st.session_state.get("question_count", 0)
-            st.metric("Questions Answered", q_cnt)
-        with hcol3:
-            tot_sc = st.session_state.get("total_score", 0.0)
-            avg_sc = (tot_sc / q_cnt) if q_cnt > 0 else 0.0
-            st.metric("Avg Score", f"{avg_sc:.1f} / 10" if q_cnt > 0 else "—")
-        with hcol4:
-            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+        # Minimalist, Clean Live Header
+        q_cnt = st.session_state.get("question_count", 0)
+        hcol_left, hcol_right = st.columns([3, 1])
+        with hcol_left:
+            st.markdown(
+                f"""
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.25rem; font-weight: 700; color: #1e293b;">🎙️ {st.session_state['target_role']}</span>
+                    <span style="background: #dcfce7; color: #15803d; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px;">LIVE</span>
+                </div>
+                <div style="font-size: 0.85rem; color: #64748b; margin-top: 2px;">
+                    Exchange {q_cnt + 1} • Technical Discussion
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with hcol_right:
+            st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
             conclude_early = st.button("🏁 End & Evaluate", use_container_width=True, type="secondary")
 
         st.markdown("---")
 
-        # Chat conversation transcript
+        # Clean Dialogue Transcript (clean real-world conversation without distracting per-turn scores)
         for turn in st.session_state["conversation"]:
             if turn["role"] == "interviewer":
                 with st.chat_message("assistant", avatar="🧞"):
@@ -330,14 +353,12 @@ if user and nav_mode == "🎙️ Practice Interview":
             elif turn["role"] == "candidate":
                 with st.chat_message("user", avatar="👤"):
                     st.write(turn["text"])
-                    if turn.get("score") is not None:
-                        st.caption(f"⭐ **Turn Score**: {turn['score']:.1f} / 10")
 
         # Live Chat Input: Pressing Enter immediately submits to the interview agent and clears the input
         answer_input = st.chat_input("Type your response here and press Enter to send (Shift+Enter for newline)...")
 
         if answer_input and answer_input.strip():
-            with st.spinner("Evaluating response and preparing next question..."):
+            with st.spinner("Interviewer is thinking..."):
                 try:
                     cid = st.session_state["user"].get("candidate_id") if st.session_state.get("user") else None
                     res = api_client.submit_answer(

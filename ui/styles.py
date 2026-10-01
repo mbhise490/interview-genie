@@ -182,6 +182,52 @@ CUSTOM_CSS = """
     background: #dcfce7;
     color: #15803d;
 }
+
+/* Auth Gate Page Styling */
+.auth-container {
+    max-width: 580px;
+    margin: 1rem auto;
+    padding: 2rem 2.2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+.auth-hero-title {
+    text-align: center;
+    font-size: 2.3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.3rem;
+}
+
+.auth-hero-subtitle {
+    text-align: center;
+    font-size: 1.02rem;
+    color: #64748b;
+    margin-bottom: 1.5rem;
+}
+
+.auth-features-bar {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.auth-feature-pill {
+    background: rgba(99, 102, 241, 0.08);
+    color: #6366f1;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+}
 </style>
 """
 

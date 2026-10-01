@@ -45,102 +45,10 @@ if "total_score" not in st.session_state:
 if "feedback" not in st.session_state:
     st.session_state["feedback"] = None
 
+nav_mode = None
+
 
 # =============================================================================
-# Sidebar: Brand, Health & Authentication
-# =============================================================================
-with st.sidebar:
-    st.markdown('<div class="genie-title">🧞 Interview Genie</div>', unsafe_allow_html=True)
-    st.markdown('<div class="genie-subtitle">Adaptive Mock Interview Platform</div>', unsafe_allow_html=True)
-
-    # 1. Database & Backend Health
-    health = api_client.validate_db()
-    if health.get("status") == "connected":
-        st.success(f"🟢 Database: {health.get('database')} Connected", icon="✅")
-        with st.expander("Database Status"):
-            st.caption(f"Server: {health.get('server_version', 'SQL Server')[:45]}...")
-            tbls = health.get("tables", {})
-            st.write(f"- **Candidates**: {tbls.get('candidates', 0)}")
-            st.write(f"- **Resumes**: {tbls.get('resume_info', 0)}")
-            st.write(f"- **Interviews**: {tbls.get('interview', 0)}")
-    else:
-        st.error(f"🔴 DB Offline: {health.get('error', 'Unable to reach backend')}", icon="⚠️")
-
-    st.markdown("---")
-
-    # 2. Candidate Authentication
-    if st.session_state.get("user"):
-        user = st.session_state["user"]
-        st.markdown(
-            f"""
-            <div class="user-badge-container">
-                <div class="user-badge-name">👤 {user.get('full_name', 'Candidate')}</div>
-                <div class="user-badge-email">{user.get('email', '')}</div>
-                <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">ID: {user.get('candidate_id', '')[:8]}...</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.button("Sign Out", use_container_width=True):
-            st.session_state["user"] = None
-            st.rerun()
-    else:
-        st.markdown("### 🔐 Candidate Sign In")
-        auth_tab1, auth_tab2 = st.tabs(["Sign In", "Sign Up"])
-
-        with auth_tab1:
-            with st.form("login_form"):
-                login_email = st.text_input("Email", placeholder="you@example.com")
-                login_password = st.text_input("Password", type="password")
-                login_btn = st.form_submit_button("Sign In", use_container_width=True)
-
-                if login_btn:
-                    if not login_email or not login_password:
-                        st.warning("Please provide email and password.")
-                    else:
-                        try:
-                            auth_res = api_client.login(login_email, login_password)
-                            st.session_state["user"] = auth_res
-                            st.success("Signed in successfully!")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(str(e))
-
-        with auth_tab2:
-            with st.form("register_form"):
-                reg_name = st.text_input("Full Name", placeholder="Jane Doe")
-                reg_email = st.text_input("Email", placeholder="you@example.com")
-                reg_phone = st.text_input("Phone (optional)", placeholder="+1-555-0199")
-                reg_password = st.text_input("Password", type="password")
-                reg_btn = st.form_submit_button("Create Account", use_container_width=True)
-
-                if reg_btn:
-                    if not reg_email or not reg_password:
-                        st.warning("Email and password are required.")
-                    else:
-                        try:
-                            auth_res = api_client.register(
-                                email=reg_email,
-                                password=reg_password,
-                                full_name=reg_name,
-                                phone=reg_phone,
-                            )
-                            st.session_state["user"] = auth_res
-                            st.success("Account created successfully!")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(str(e))
-
-    st.markdown("---")
-
-    # Navigation Mode
-    nav_mode = st.radio(
-        "Navigation",
-        options=["🎙️ Practice Interview", "📊 My History & Growth", "⚙️ System & DB Health"],
-        index=0,
-    )
-
-
 # =============================================================================
 # Helper: Reset Interview State
 # =============================================================================
@@ -155,9 +63,151 @@ def reset_interview():
 
 
 # =============================================================================
+# GATE: Candidate Authentication
+# Every candidate MUST sign in or register before accessing interview features.
+# =============================================================================
+if not st.session_state.get("user"):
+    # Minimalist Sidebar during unauthenticated state
+    with st.sidebar:
+        st.markdown('<div class="genie-title">🧞 Interview Genie</div>', unsafe_allow_html=True)
+        st.markdown('<div class="genie-subtitle">Adaptive Mock Interview Platform</div>', unsafe_allow_html=True)
+        st.markdown("---")
+
+        health = api_client.validate_db()
+        if health.get("status") == "connected":
+            st.success(f"🟢 DB: {health.get('database')} Connected", icon="✅")
+        else:
+            st.warning("🟡 Standalone Mode (SQLite Engine)", icon="ℹ️")
+
+        st.markdown("---")
+        st.caption("🔒 **Candidate Authentication Required**\nPlease sign in or create an account on the main screen to start your adaptive technical interview.")
+
+    # Main Screen: Dedicated Candidate Login / Registration Portal
+    st.markdown('<div class="auth-hero-title">🧞 Interview Genie</div>', unsafe_allow_html=True)
+    st.markdown('<div class="auth-hero-subtitle">Adaptive AI Mock Interviewer & Growth Platform</div>', unsafe_allow_html=True)
+
+    st.markdown(
+        """
+        <div class="auth-features-bar">
+            <span class="auth-feature-pill">🎯 Adaptive Question Difficulty</span>
+            <span class="auth-feature-pill">⚡ Real-Time Scoring (0-10)</span>
+            <span class="auth-feature-pill">📈 Role-Specific Historical Progress</span>
+            <span class="auth-feature-pill">📄 Resume-Aligned Evaluation</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    _, col_center, _ = st.columns([1, 2.2, 1])
+
+    with col_center:
+        st.markdown("### 🔐 Candidate Sign In")
+        st.caption("All candidates must sign in to start their interview session and track historical evaluations.")
+
+        auth_tab1, auth_tab2 = st.tabs(["🔑 Sign In", "📝 Create Account"])
+
+        with auth_tab1:
+            with st.form("main_login_form"):
+                login_email = st.text_input("Email Address", placeholder="you@example.com")
+                login_password = st.text_input("Password", type="password", placeholder="Enter your password")
+                login_btn = st.form_submit_button("Sign In to Start Interview", type="primary", use_container_width=True)
+
+                if login_btn:
+                    if not login_email or not login_password:
+                        st.warning("Please provide email and password.")
+                    else:
+                        try:
+                            auth_res = api_client.login(login_email, login_password)
+                            st.session_state["user"] = auth_res
+                            st.success(f"Welcome back, {auth_res.get('full_name', 'Candidate')}!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(str(e))
+
+        with auth_tab2:
+            with st.form("main_register_form"):
+                reg_name = st.text_input("Full Name", placeholder="Jane Doe")
+                reg_email = st.text_input("Email Address", placeholder="you@example.com")
+                reg_phone = st.text_input("Phone (optional)", placeholder="+1-555-0199")
+                reg_password = st.text_input("Password", type="password", placeholder="At least 4 characters")
+                reg_btn = st.form_submit_button("Create Account & Continue", type="primary", use_container_width=True)
+
+                if reg_btn:
+                    if not reg_email or not reg_password:
+                        st.warning("Email and password are required.")
+                    elif len(reg_password) < 4:
+                        st.warning("Password must be at least 4 characters.")
+                    else:
+                        try:
+                            auth_res = api_client.register(
+                                email=reg_email,
+                                password=reg_password,
+                                full_name=reg_name,
+                                phone=reg_phone,
+                            )
+                            st.session_state["user"] = auth_res
+                            st.success(f"Account created! Welcome, {auth_res.get('full_name', 'Candidate')}!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(str(e))
+
+    # Stop execution here: no interview-related stuff is displayed until logged in!
+    st.stop()
+
+
+# =============================================================================
+# Authenticated Sidebar: Candidate Profile, Navigation & DB Status
+# =============================================================================
+user = st.session_state.get("user")
+if user:
+    with st.sidebar:
+        st.markdown('<div class="genie-title">🧞 Interview Genie</div>', unsafe_allow_html=True)
+        st.markdown('<div class="genie-subtitle">Adaptive Mock Interview Platform</div>', unsafe_allow_html=True)
+
+        st.markdown(
+            f"""
+            <div class="user-badge-container">
+                <div class="user-badge-name">👤 {user.get('full_name', 'Candidate')}</div>
+                <div class="user-badge-email">{user.get('email', '')}</div>
+                <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Candidate ID: {user.get('candidate_id', '')[:8]}...</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Sign Out", use_container_width=True):
+            reset_interview()
+            st.session_state["user"] = None
+            st.rerun()
+
+        st.markdown("---")
+
+        # Navigation Mode
+        nav_mode = st.radio(
+            "Navigation",
+            options=["🎙️ Practice Interview", "📊 My History & Growth", "⚙️ System & DB Health"],
+            index=0,
+        )
+
+        st.markdown("---")
+
+        # Database & Backend Health
+        health = api_client.validate_db()
+        if health.get("status") == "connected":
+            st.success(f"🟢 Database: {health.get('database')} Connected", icon="✅")
+            with st.expander("Database Status"):
+                st.caption(f"Server: {health.get('server_version', 'SQL Server')[:45]}...")
+                tbls = health.get("tables", {})
+                st.write(f"- **Candidates**: {tbls.get('candidates', 0)}")
+                st.write(f"- **Resumes**: {tbls.get('resume_info', 0)}")
+                st.write(f"- **Interviews**: {tbls.get('interview', 0)}")
+        else:
+            st.error(f"🔴 DB Offline: {health.get('error', 'Unable to reach backend')}", icon="⚠️")
+
+
+# =============================================================================
 # VIEW 1: Practice Interview
 # =============================================================================
-if nav_mode == "🎙️ Practice Interview":
+if user and nav_mode == "🎙️ Practice Interview":
     st.markdown('<div class="genie-title">Mock Interview Studio</div>', unsafe_allow_html=True)
     st.caption("AI-powered adaptive interview customized to your resume and role.")
 
@@ -454,82 +504,79 @@ if nav_mode == "🎙️ Practice Interview":
 # =============================================================================
 # VIEW 2: My History & Growth
 # =============================================================================
-elif nav_mode == "📊 My History & Growth":
+elif user and nav_mode == "📊 My History & Growth":
     st.markdown('<div class="genie-title">Candidate History & Growth Tracking</div>', unsafe_allow_html=True)
     st.caption("Review your completed interviews, role progression, and evaluator feedback stored in SQL Server.")
 
-    user = st.session_state.get("user")
-    if not user or not user.get("candidate_id"):
-        st.warning("Please sign in or register in the sidebar to view your interview history.")
-    else:
-        try:
-            profile = api_client.get_profile(user["candidate_id"])
-            st.session_state["user"] = profile
-            interviews = profile.get("interviews", [])
+    user = st.session_state["user"]
+    try:
+        profile = api_client.get_profile(user["candidate_id"])
+        st.session_state["user"] = profile
+        interviews = profile.get("interviews", [])
 
-            # Summary Metrics
-            mcol1, mcol2, mcol3 = st.columns(3)
-            with mcol1:
-                st.metric("Total Interviews", len(interviews))
-            with mcol2:
-                roles = set(iv.get("target_role") for iv in interviews if iv.get("target_role"))
-                st.metric("Roles Practiced", len(roles))
-            with mcol3:
-                scores = [float(iv.get("total_score", 0.0)) for iv in interviews if iv.get("status") == "completed"]
-                best_score = max(scores) if scores else 0.0
-                st.metric("Highest Total Score", f"{best_score:.1f}")
+        # Summary Metrics
+        mcol1, mcol2, mcol3 = st.columns(3)
+        with mcol1:
+            st.metric("Total Interviews", len(interviews))
+        with mcol2:
+            roles = set(iv.get("target_role") for iv in interviews if iv.get("target_role"))
+            st.metric("Roles Practiced", len(roles))
+        with mcol3:
+            scores = [float(iv.get("total_score", 0.0)) for iv in interviews if iv.get("status") == "completed"]
+            best_score = max(scores) if scores else 0.0
+            st.metric("Highest Total Score", f"{best_score:.1f}")
 
-            st.markdown("---")
+        st.markdown("---")
 
-            if not interviews:
-                st.info("You haven't completed any interviews yet. Head over to **Practice Interview** to get started!")
-            else:
-                # Role filter
-                all_roles = ["All Roles"] + sorted(list(roles))
-                role_filter = st.selectbox("Filter by Target Role:", all_roles)
+        if not interviews:
+            st.info("You haven't completed any interviews yet. Head over to **Practice Interview** to get started!")
+        else:
+            # Role filter
+            all_roles = ["All Roles"] + sorted(list(roles))
+            role_filter = st.selectbox("Filter by Target Role:", all_roles)
 
-                filtered_ivs = interviews
-                if role_filter != "All Roles":
-                    filtered_ivs = [iv for iv in interviews if iv.get("target_role") == role_filter]
+            filtered_ivs = interviews
+            if role_filter != "All Roles":
+                filtered_ivs = [iv for iv in interviews if iv.get("target_role") == role_filter]
 
-                st.markdown(f"### Showing **{len(filtered_ivs)}** session(s):")
+            st.markdown(f"### Showing **{len(filtered_ivs)}** session(s):")
 
-                for iv in filtered_ivs:
-                    role = iv.get("target_role", "Unknown Role")
-                    status = iv.get("status", "in_progress")
-                    score = float(iv.get("total_score", 0.0))
-                    q_count = iv.get("question_count", 0)
-                    started = iv.get("started_at", "—")
-                    rec = iv.get("recommendation")
-                    summary = iv.get("overall_summary")
-                    thread_id = iv.get("thread_id")
+            for iv in filtered_ivs:
+                role = iv.get("target_role", "Unknown Role")
+                status = iv.get("status", "in_progress")
+                score = float(iv.get("total_score", 0.0))
+                q_count = iv.get("question_count", 0)
+                started = iv.get("started_at", "—")
+                rec = iv.get("recommendation")
+                summary = iv.get("overall_summary")
+                thread_id = iv.get("thread_id")
 
-                    badge_html = get_recommendation_badge_html(rec) if rec else ""
+                badge_html = get_recommendation_badge_html(rec) if rec else ""
 
-                    with st.expander(f"💼 {role} — Status: {status.upper()} | Score: {score:.1f} ({started[:19]})"):
-                        ccol1, ccol2, ccol3 = st.columns([1, 1, 1])
-                        with ccol1:
-                            st.write(f"**Thread ID**: `{thread_id}`")
-                            st.write(f"**Started**: {started[:19]}")
-                        with ccol2:
-                            st.write(f"**Questions**: {q_count}")
-                            st.write(f"**Total Score**: {score:.1f}")
-                        with ccol3:
-                            if badge_html:
-                                st.markdown(f"**Recommendation**: {badge_html}", unsafe_allow_html=True)
+                with st.expander(f"💼 {role} — Status: {status.upper()} | Score: {score:.1f} ({started[:19]})"):
+                    ccol1, ccol2, ccol3 = st.columns([1, 1, 1])
+                    with ccol1:
+                        st.write(f"**Thread ID**: `{thread_id}`")
+                        st.write(f"**Started**: {started[:19]}")
+                    with ccol2:
+                        st.write(f"**Questions**: {q_count}")
+                        st.write(f"**Total Score**: {score:.1f}")
+                    with ccol3:
+                        if badge_html:
+                            st.markdown(f"**Recommendation**: {badge_html}", unsafe_allow_html=True)
 
-                        if summary:
-                            st.markdown("**Overall Feedback**:")
-                            st.write(summary)
+                    if summary:
+                        st.markdown("**Overall Feedback**:")
+                        st.write(summary)
 
-        except Exception as e:
-            st.error(f"Error fetching candidate profile: {e}")
+    except Exception as e:
+        st.error(f"Error fetching candidate profile: {e}")
 
 
 # =============================================================================
 # VIEW 3: System & DB Health
 # =============================================================================
-elif nav_mode == "⚙️ System & DB Health":
+elif user and nav_mode == "⚙️ System & DB Health":
     st.markdown('<div class="genie-title">System Architecture & Database Health</div>', unsafe_allow_html=True)
     st.caption("Diagnostics for Microsoft SQL Server connection, LangGraph state, and FastAPI endpoints.")
 

@@ -304,8 +304,8 @@ if user and nav_mode == "🎙️ Practice Interview":
     # STAGE B: In-Progress Live Interview Room
     # ---------------------------------------------------------
     elif st.session_state["interview_status"] == "in_progress":
-        # Header Status Bar
-        hcol1, hcol2, hcol3 = st.columns([2, 1, 1])
+        # Header Status Bar with Conclude button
+        hcol1, hcol2, hcol3, hcol4 = st.columns([2, 1, 1, 1])
         with hcol1:
             st.markdown(f"### 🎯 Role: **{st.session_state['target_role']}**")
             st.caption(f"Session Thread: `{st.session_state['thread_id']}`")
@@ -316,6 +316,9 @@ if user and nav_mode == "🎙️ Practice Interview":
             tot_sc = st.session_state.get("total_score", 0.0)
             avg_sc = (tot_sc / q_cnt) if q_cnt > 0 else 0.0
             st.metric("Avg Score", f"{avg_sc:.1f} / 10" if q_cnt > 0 else "—")
+        with hcol4:
+            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+            conclude_early = st.button("🏁 End & Evaluate", use_container_width=True, type="secondary")
 
         st.markdown("---")
 
@@ -330,23 +333,10 @@ if user and nav_mode == "🎙️ Practice Interview":
                     if turn.get("score") is not None:
                         st.caption(f"⭐ **Turn Score**: {turn['score']:.1f} / 10")
 
-        # Candidate Answer Box (clears cleanly on submit via dynamic answer_box_id)
-        st.markdown("#### ✍️ Your Answer")
-        current_box_id = st.session_state.get("answer_box_id", 0)
-        answer_input = st.text_area(
-            "Respond to the interviewer's question:",
-            height=140,
-            placeholder="Type your detailed answer here... Include technical context, trade-offs, and examples.",
-            key=f"candidate_answer_{current_box_id}",
-        )
+        # Live Chat Input: Pressing Enter immediately submits to the interview agent and clears the input
+        answer_input = st.chat_input("Type your response here and press Enter to send (Shift+Enter for newline)...")
 
-        bcol1, bcol2, _ = st.columns([1, 1, 2])
-        with bcol1:
-            submit_ans = st.button("Submit Answer", type="primary", use_container_width=True, disabled=not answer_input.strip())
-        with bcol2:
-            conclude_early = st.button("End & Evaluate Now", use_container_width=True)
-
-        if submit_ans and answer_input.strip():
+        if answer_input and answer_input.strip():
             with st.spinner("Evaluating response and preparing next question..."):
                 try:
                     cid = st.session_state["user"].get("candidate_id") if st.session_state.get("user") else None
@@ -382,10 +372,6 @@ if user and nav_mode == "🎙️ Practice Interview":
                     st.session_state["interview_status"] = new_status
                     if res.get("feedback"):
                         st.session_state["feedback"] = res.get("feedback")
-
-                    # Advance answer box ID and clean up current answer key so next turn starts with empty text area
-                    st.session_state["answer_box_id"] = current_box_id + 1
-                    st.session_state.pop(f"candidate_answer_{current_box_id}", None)
 
                     st.rerun()
                 except Exception as e:

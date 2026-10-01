@@ -44,11 +44,12 @@ if "total_score" not in st.session_state:
     st.session_state["total_score"] = 0.0
 if "feedback" not in st.session_state:
     st.session_state["feedback"] = None
+if "answer_box_id" not in st.session_state:
+    st.session_state["answer_box_id"] = 0
 
 nav_mode = None
 
 
-# =============================================================================
 # =============================================================================
 # Helper: Reset Interview State
 # =============================================================================
@@ -60,6 +61,7 @@ def reset_interview():
     st.session_state["question_count"] = 0
     st.session_state["total_score"] = 0.0
     st.session_state["feedback"] = None
+    st.session_state["answer_box_id"] = 0
 
 
 # =============================================================================
@@ -293,6 +295,7 @@ if user and nav_mode == "🎙️ Practice Interview":
                         st.session_state["question_count"] = res.get("question_count", 0)
                         st.session_state["total_score"] = res.get("total_score", 0.0)
                         st.session_state["feedback"] = None
+                        st.session_state["answer_box_id"] = 0
                         st.rerun()
                     except Exception as e:
                         st.error(f"Error starting interview: {e}")
@@ -327,13 +330,14 @@ if user and nav_mode == "🎙️ Practice Interview":
                     if turn.get("score") is not None:
                         st.caption(f"⭐ **Turn Score**: {turn['score']:.1f} / 10")
 
-        # Candidate Answer Box
+        # Candidate Answer Box (clears cleanly on submit via dynamic answer_box_id)
         st.markdown("#### ✍️ Your Answer")
+        current_box_id = st.session_state.get("answer_box_id", 0)
         answer_input = st.text_area(
             "Respond to the interviewer's question:",
             height=140,
             placeholder="Type your detailed answer here... Include technical context, trade-offs, and examples.",
-            key="candidate_answer_input",
+            key=f"candidate_answer_{current_box_id}",
         )
 
         bcol1, bcol2, _ = st.columns([1, 1, 2])
@@ -378,6 +382,10 @@ if user and nav_mode == "🎙️ Practice Interview":
                     st.session_state["interview_status"] = new_status
                     if res.get("feedback"):
                         st.session_state["feedback"] = res.get("feedback")
+
+                    # Advance answer box ID and clean up current answer key so next turn starts with empty text area
+                    st.session_state["answer_box_id"] = current_box_id + 1
+                    st.session_state.pop(f"candidate_answer_{current_box_id}", None)
 
                     st.rerun()
                 except Exception as e:

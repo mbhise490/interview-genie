@@ -78,16 +78,6 @@ flowchart TD
 
 ---
 
-## 🚀 Quickstart & Local Setup
-
-### 1. Prerequisites
-- **Python 3.11+** (Python 3.14 supported)
-- An **OpenAI API Key** ([platform.openai.com](https://platform.openai.com/api-keys))
-- *(Optional)* Microsoft SQL Server if you prefer testing with enterprise SQL Server locally. Otherwise, SQLite is used automatically with zero setup.
-
-
----
-
 ## ☁️ Cloud Deployment (Streamlit Community Cloud)
 
 Interview Genie is fully configured for instantaneous, zero-cost deployment on **[Streamlit Community Cloud](https://share.streamlit.io)**:
@@ -105,67 +95,8 @@ Interview Genie is fully configured for instantaneous, zero-cost deployment on *
 
 ---
 
-## 📡 API Reference Overview
-
-The FastAPI backend exposes the following primary endpoints:
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/auth/register` | Register a new candidate account with bcrypt hashing. |
-| `POST` | `/auth/login` | Authenticate an existing candidate. |
-| `POST` | `/api/interview/start` | Ingests PDF resume, parses background, generates topics, and kicks off graph. |
-| `POST` | `/api/interview/answer` | Submits candidate answer, executes agent reasoning, returns next question & score. |
-| `POST` | `/api/interview/end` | Concludes interview and triggers Evaluator Agent to generate scorecard. |
-| `GET` | `/api/candidates/{id}/history` | Retrieves historical interview performance records for a candidate. |
-| `GET` | `/api/health` | Validates backend uptime and database connection status. |
-
 ---
 
-## 📊 Database Schema
-
-Interview Genie maintains candidate records across three normalized entities:
-
-```
-[ candidates ]
-  ├── candidate_id (PK, UUID)
-  ├── email (Unique)
-  ├── password_hash (Bcrypt)
-  ├── full_name
-  └── created_at
-
-[ resume_info ]
-  ├── resume_id (PK, Identity)
-  ├── candidate_id (FK -> candidates)
-  ├── target_role
-  ├── resume_text
-  ├── parsed_skills, parsed_projects, parsed_experience
-  └── created_at
-
-[ interview ]
-  ├── interview_id (PK, Identity)
-  ├── thread_id (Unique, LangGraph Thread)
-  ├── candidate_id (FK -> candidates)
-  ├── target_role
-  ├── status (not_started / in_progress / completed)
-  ├── question_count
-  ├── total_score, average_score
-  ├── conversation_history (JSON Array of Questions, Answers, and Turn Scores)
-  ├── evaluation_report (JSON Scorecard: Strengths, Weaknesses, Growth Analysis)
-  └── created_at, updated_at
-```
-
----
-
-## 🤝 Contributing
-
-Contributions, feedback, and issue submissions are welcome!
-1. Fork the Project.
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your Changes (`git commit -m "feat: add AmazingFeature"`).
-4. Push to the Branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
-
----
 
 ## 📜 License
 

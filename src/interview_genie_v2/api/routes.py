@@ -15,7 +15,7 @@ from interview_genie_v2.api.deps import get_current_user
 from interview_genie_v2.api.schemas import AnswerRequest,FeedbackOut, InterviewOut,InterviewSummary,RegisterRequest,TurnOut,UserOut
 from interview_genie_v2.database.db_conn import get_session
 from interview_genie_v2.database.models import Interview, User
-from interview_genie_v2.database.repositories import complete_interview_with_feedback, create_interview, create_user, get_feedback_for_interview, get_interview_for_user, get_user_by_email, list_interviews_for_user, save_interview_progress
+from interview_genie_v2.database.repositories import complete_interview_with_feedback, create_interview, create_user, get_feedback_for_interview, get_interview_for_user, get_user_by_email, list_interviews_for_user
 
 from interview_genie_v2.graph.build_graph import interview_graph
 from interview_genie_v2.graph.session_store import delete, get, put
@@ -68,15 +68,6 @@ def _turn_out(interview_id: int, state: InterviewState, message: str) -> TurnOut
         interview_id=interview_id,
         status=dynamic.status,
         message=message,)
-
-
-def _save_progress(session: Session, interview: Interview, state: InterviewState) -> None:
-    script_json = json.dumps(state["dynamic"].messages, ensure_ascii=False)
-    try:
-        save_interview_progress(session, interview, script_json)
-    except ValueError as exc:
-        logger.warning("Could not save progress for interview %s: %s", interview.interview_id, exc)
-        raise HTTPException(409, "This interview progress could not be saved.")
 
 
 def _finish(
@@ -206,7 +197,6 @@ def begin_interview(interview_id: int,user: Annotated[User, Depends(get_current_
     message = dynamic.messages[-1]["content"]
     if dynamic.status == "completed":
         return _finish(session, interview, result, message)
-    _save_progress(session, interview, result)
     put(interview_id, result)
     return _turn_out(interview_id, result, message)
 
@@ -231,7 +221,7 @@ def submit_answer(interview_id: int,body: AnswerRequest,user: Annotated[User, De
         "dynamic": dynamic.model_copy(
             update={"messages": [
                     *dynamic.messages,
-                    {"role": "candidate", "content": text, "topic": None},]}),}
+                    {"role": "candidate", "content": text},]}),}
     try:
         result = interview_graph.invoke(state)
     except LLM_ERRORS:
@@ -240,7 +230,6 @@ def submit_answer(interview_id: int,body: AnswerRequest,user: Annotated[User, De
     message = result["dynamic"].messages[-1]["content"]
     if result["dynamic"].status == "completed":
         return _finish(session, interview, result, message)
-    _save_progress(session, interview, result)
     put(interview_id, result)
     return _turn_out(interview_id, result, message)
 

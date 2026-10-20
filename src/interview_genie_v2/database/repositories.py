@@ -30,14 +30,6 @@ def get_interview_for_user(session: Session, interview_id: int, user_id: int) ->
     return session.exec(select(Interview).where(Interview.interview_id == interview_id, Interview.user_id == user_id,)).first()
 
 
-def save_interview_progress(session: Session, interview: Interview, script_json: str) -> None:
-    if interview.status != "in_progress":
-        raise ValueError("Cannot save progress for a completed interview.")
-    interview.interview_script = script_json
-    session.add(interview)
-    session.commit()
-
-
 def complete_interview_with_feedback(session: Session,interview: Interview,script_json: str,feedback_cols: dict[str, str],) -> Feedback:
     """Save the final transcript, completion status, and feedback atomically."""
     if interview.status == "completed":

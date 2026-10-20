@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white text-body font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-heading;
+  }
+}
+
+@layer components {
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+}

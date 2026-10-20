@@ -16,14 +16,10 @@ class StaticContext(BaseModel):
 class Message(TypedDict):
     role: Literal["interviewer", "candidate"]
     content: str
-    topic: str | None
 
 
 class DynamicState(BaseModel):
     messages: list[Message] = Field(default_factory=list)
-    asked_topics: list[str] = Field(default_factory=list)
-    current_topic: str | None = None
-    follow_up_count: int = 0
     status: Literal["in_progress", "completed"] = "in_progress"
     feedback: EvaluationResult | None = None
 

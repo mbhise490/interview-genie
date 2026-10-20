@@ -25,17 +25,16 @@ class ResumeInfo(BaseModel):
     other_relevant_info: list[str] = Field(..., description="Education, publications or anything else relevant.")
 
 class KeyTopic(BaseModel):
-    topic: str = Field(..., description="Main topic to discuss, e.g. 'SQL' or 'Interview Genie project'.")
+    topic: str = Field(..., description="A specific interview topic to ask about.")
     category: Literal["role_fundamentals", "technical_skill", "project_deep_dive", "experience", "behavioral"]
-    source: Literal["role", "resume", "both"] = Field(..., description="Whether the topic comes from the target role, the resume, or both.")
-    reason: str = Field(..., description="One sentence on why this topic must be covered in the interview.")
+    source: Literal["role", "resume", "both"] = Field(..., description="Whether the topic comes from the role, resume, or both.")
+    reason: str = Field(..., description="Why this topic is relevant to the interview.")
 
 class KeyTopics(BaseModel):
-    topics: list[KeyTopic] = Field(..., description="Essential topics for the interview, ordered by importance.")
+    topics: list[KeyTopic] = Field(..., description="Topics to guide the interview, ordered by relevance.")
 
 class InterviewerTurn(BaseModel):
-    action: Literal["ask_new_topic", "follow_up", "end_interview"]
-    topic: str | None = Field(..., description="Topic name this question belongs to, or null when ending.")
+    action: Literal["ask_question", "follow_up", "end_interview"]
     question: str = Field(..., description="What the interviewer says next: one question, or a closing message.")
 
 class Observation(BaseModel):

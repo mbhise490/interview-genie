@@ -7,26 +7,11 @@ from interview_genie_v2.graph.state import InterviewState
 
 def interviewer_node(state: InterviewState) -> dict:
     turn = next_turn(state)
-    message = {"role": "interviewer", "content": turn.question, "topic": turn.topic}
+    message = {"role": "interviewer", "content": turn.question}
     dynamic = state["dynamic"]
-    asked_topics = list(dynamic.asked_topics)
-    current_topic = dynamic.current_topic
-    follow_up_count = dynamic.follow_up_count
-
-    if turn.action != "end_interview" and turn.topic:
-        if turn.action == "follow_up" and turn.topic == current_topic:
-            follow_up_count += 1
-        else:
-            follow_up_count = 0
-            if turn.topic not in asked_topics:
-                asked_topics.append(turn.topic)
-        current_topic = turn.topic
     updated = dynamic.model_copy(
         update={
             "messages": [*dynamic.messages, message],
-            "asked_topics": asked_topics,
-            "current_topic": current_topic,
-            "follow_up_count": follow_up_count,
             "status": "completed" if turn.action == "end_interview" else dynamic.status,})
     return {"dynamic": updated}
 

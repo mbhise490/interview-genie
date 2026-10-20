@@ -18,7 +18,7 @@ def create_user(session: Session, username: str, email: str, password_hash: str)
     return user
 
 
-def create_interview(session: Session, user_id: int, target_role: str, resume_text: str,resume_parsed: str, key_topics: str,) -> Interview:
+def create_interview(session: Session, user_id: int, target_role: str, resume_text: str,resume_parsed: str,key_topics: str,) -> Interview:
     interview = Interview( user_id=user_id, target_role=target_role,resume_text=resume_text,resume_parsed=resume_parsed,key_topics=key_topics, )
     session.add(interview)
     session.commit()
@@ -28,6 +28,14 @@ def create_interview(session: Session, user_id: int, target_role: str, resume_te
 
 def get_interview_for_user(session: Session, interview_id: int, user_id: int) -> Interview | None:
     return session.exec(select(Interview).where(Interview.interview_id == interview_id, Interview.user_id == user_id,)).first()
+
+
+def save_interview_progress(session: Session, interview: Interview, script_json: str) -> None:
+    if interview.status != "in_progress":
+        raise ValueError("Cannot save progress for a completed interview.")
+    interview.interview_script = script_json
+    session.add(interview)
+    session.commit()
 
 
 def complete_interview_with_feedback(session: Session,interview: Interview,script_json: str,feedback_cols: dict[str, str],) -> Feedback:
